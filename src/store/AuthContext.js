@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useEffect, useState } from 'react';
 
 let logoutTimer;
 export const AuthContext = createContext({
@@ -21,8 +21,7 @@ function retrieveStoredToken() {
 	const remainingTime = calculateRemainingTime(storedExpirationDate);
 	
 	if(remainingTime <= 6000){
-		localStorage.removeItem('@auth-react:token');
-		localStorage.removeItem('@auth-expiration-time');
+		localStorage.clear();
 		return null;
 	}
 
@@ -41,13 +40,12 @@ export function AuthContextProvider({children}) {
 	const [token, setToken] = useState(initialToken);
 	const userIsLoggedIn = !!token;
   
-	function logoutHandler() {
+	const logoutHandler = useCallback(() => {
 		setToken(null);
-		localStorage.removeItem('@auth-react:token');
 		localStorage.clear();
 		if(logoutTimer)
 			clearTimeout(logoutTimer);
-	}
+	}, []);
 
 	function loginHandler(token, expirationTime) {
 		setToken(token);
@@ -59,10 +57,9 @@ export function AuthContextProvider({children}) {
 
 	useEffect(() => {
 		if(tokenData){
-			console.log(tokenData.duration);
 			logoutTimer = setTimeout(logoutHandler, tokenData.duration);
 		}
-	}, [tokenData]);
+	}, [tokenData, logoutHandler]);
 
 	const contextValue = {
 		token: token,
